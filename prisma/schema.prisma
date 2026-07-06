@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- SCIM resources ---------------------------------------------------
+
+model ScimUser {
+  id            String   @id @default(uuid())
+  externalId    String?
+  userName      String   @unique
+  givenName     String?
+  familyName    String?
+  email         String?
+  active        Boolean  @default(true)
+  passwordHash  String?
+  raw           Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   ScimGroupMember[]
+
+  @@map("scim_users")
+}
+
+model ScimGroup {
+  id          String   @id @default(uuid())
+  externalId  String?
+  displayName String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ScimGroupMember[]
+
+  @@map("scim_groups")
+}
+
+model ScimGroupMember {
+  id      String    @id @default(uuid())
+  group   ScimGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+  user    ScimUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([groupId, userId])
+  @@map("scim_group_members")
+}
+
+// --- OAuth 2.0 authorization server ------------------------------------
+
+model OAuthClient {
+  id           String   @id @default(uuid())
+  clientId     String   @unique
+  clientSecret String
+  name         String
+  redirectUris String[]
+  scopes       String[] @default(["scim"])
+  createdAt    DateTime @default(now())
+
+  authorizationCodes AuthorizationCode[]
+  accessTokens       AccessToken[]
+  refreshTokens      RefreshToken[]
+
+  @@map("oauth_clients")
+}
+
+model AuthorizationCode {
+  id          String      @id @default(uuid())
+  code        String      @unique
+  client      OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String
+  redirectUri String
+  scope       String
+  expiresAt   DateTime
+  used        Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+
+  @@map("oauth_authorization_codes")
+}
+
+model AccessToken {
+  id        String      @id @default(uuid())
+  token     String      @unique
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String
+  scope     String
+  expiresAt DateTime
+  revoked   Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  refreshToken RefreshToken?
+
+  @@map("oauth_access_tokens")
+}
+
+model RefreshToken {
+  id            String       @id @default(uuid())
+  token         String       @unique
+  client        OAuthClient  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId      String
+  scope         String
+  accessToken   AccessToken? @relation(fields: [accessTokenId], references: [id], onDelete: SetNull)
+  accessTokenId String?      @unique
+  expiresAt     DateTime
+  revoked       Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  @@map("oauth_refresh_tokens")
+}

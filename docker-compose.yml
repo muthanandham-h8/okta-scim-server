@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: okta-scim-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scim
+      POSTGRES_PASSWORD: scim
+      POSTGRES_DB: okta_scim
+    ports:
+      - "5434:5432"
+    volumes:
+      - okta_scim_pgdata:/var/lib/postgresql/data
+
+volumes:
+  okta_scim_pgdata:
