@@ -36,7 +36,8 @@ export class DemoController {
 
   private demoConfig(): DemoConfig {
     const base = this.config.get<string>('PUBLIC_BASE_URL', 'http://localhost:3000');
-    const issuer = this.config.get<string>('KEYCLOAK_ISSUER', 'http://localhost:8080/realms/scim');
+    const realm = this.config.get<string>('KEYCLOAK_REALM', 'scim');
+    const issuer = this.config.get<string>('KEYCLOAK_ISSUER') || `${base}/realms/${realm}`;
     // Keycloak base (strip the trailing /realms/<realm>) for the admin console link.
     const kcBase = issuer.replace(/\/realms\/[^/]+$/, '');
     return {

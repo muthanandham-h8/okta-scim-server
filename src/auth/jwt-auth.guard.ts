@@ -26,7 +26,12 @@ export class JwtAuthGuard implements CanActivate {
   private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
 
   constructor(private readonly config: ConfigService) {
-    this.issuer = this.config.getOrThrow<string>('KEYCLOAK_ISSUER');
+    // Issuer is derived from the single-source PUBLIC_BASE_URL + realm, unless
+    // KEYCLOAK_ISSUER is explicitly set to override it.
+    const publicBase = this.config.getOrThrow<string>('PUBLIC_BASE_URL');
+    const realm = this.config.get<string>('KEYCLOAK_REALM', 'scim');
+    this.issuer =
+      this.config.get<string>('KEYCLOAK_ISSUER') || `${publicBase}/realms/${realm}`;
     this.audience = this.config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
     this.requiredScope = this.config.get<string>('KEYCLOAK_REQUIRED_SCOPE', 'scim');
 

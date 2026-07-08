@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "setup": "node scripts/start.mjs",
     "demo:start": "node scripts/start.mjs",
     "demo:stop": "node scripts/stop.mjs"
   },

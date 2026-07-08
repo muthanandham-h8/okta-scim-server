@@ -18,7 +18,10 @@ let JwtAuthGuard = JwtAuthGuard_1 = class JwtAuthGuard {
     constructor(config) {
         this.config = config;
         this.logger = new common_1.Logger(JwtAuthGuard_1.name);
-        this.issuer = this.config.getOrThrow('KEYCLOAK_ISSUER');
+        const publicBase = this.config.getOrThrow('PUBLIC_BASE_URL');
+        const realm = this.config.get('KEYCLOAK_REALM', 'scim');
+        this.issuer =
+            this.config.get('KEYCLOAK_ISSUER') || `${publicBase}/realms/${realm}`;
         this.audience = this.config.get('KEYCLOAK_AUDIENCE') || undefined;
         this.requiredScope = this.config.get('KEYCLOAK_REQUIRED_SCOPE', 'scim');
         const jwksUri = this.config.get('KEYCLOAK_JWKS_URI') ||

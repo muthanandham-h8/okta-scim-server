@@ -21,7 +21,13 @@ const { URL, URLSearchParams } = require('url');
 
 const KEYCLOAK = 'http://localhost:8080';
 const SCIM = 'http://localhost:3000';
-const PUBLIC_HOST = process.env.PUBLIC_HOST || 'excluding-snowdrift-reformer.ngrok-free.dev';
+// Single source: start.mjs sets PUBLIC_HOST from .env's PUBLIC_BASE_URL. If run
+// standalone, fall back to deriving the host from PUBLIC_BASE_URL, else local.
+const PUBLIC_HOST =
+  process.env.PUBLIC_HOST ||
+  (process.env.PUBLIC_BASE_URL
+    ? process.env.PUBLIC_BASE_URL.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    : 'localhost:8088');
 const PORT = Number(process.env.EDGE_PORT || 8088);
 const EVENT_SINK = process.env.EVENT_SINK || 'http://localhost:3000/demo/internal/events';
 
