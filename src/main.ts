@@ -3,11 +3,17 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import { AppModule } from './app.module';
+import { RequestLoggingInterceptor } from './common/logging.interceptor';
 
 async function bootstrap() {
   // bodyParser: false disables Nest's default body-parser registration so we
   // can install our own before anything else runs (see comment below).
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  // logger levels include 'debug'/'verbose' so the request + JWT-decode logs
+  // show in the backend console.
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
 
   // Okta (and most SCIM clients) send Content-Type: application/scim+json,
   // which Express's default JSON parser ignores since it only matches
@@ -26,6 +32,9 @@ async function bootstrap() {
     res.type('application/scim+json');
     next();
   });
+
+  // Log every request (method, path, client, redacted body) + response status.
+  app.useGlobalInterceptors(new RequestLoggingInterceptor());
 
   // OpenAPI / Swagger docs at /docs (JSON at /docs-json). Tokens are now issued
   // by Keycloak (the authorization server); this API only validates them. Two

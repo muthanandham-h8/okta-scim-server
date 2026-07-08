@@ -55,7 +55,7 @@ Okta ──Bearer JWT──▶ /scim/v2/*  ──verify signature via JWKS──
 |---|---|
 | Realm | `scim` |
 | Client ID | `scim-client` |
-| Client secret | `scim-client-secret` |
+| Client secret | `w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7` |
 | Test user | `alice` / `alice` |
 | Scope | `scim` (default client scope, appears in the token) |
 | Issuer | `http://localhost:8080/realms/scim` |
@@ -81,13 +81,13 @@ Any standard OAuth2 grant against Keycloak works. Two easy ones for testing:
 # Client credentials (machine-to-machine)
 curl -s -X POST http://localhost:8080/realms/scim/protocol/openid-connect/token \
   -d grant_type=client_credentials \
-  -d client_id=scim-client -d client_secret=scim-client-secret \
+  -d client_id=scim-client -d client_secret=w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7 \
   -d scope=scim
 
 # Resource-owner password (as the test user)
 curl -s -X POST http://localhost:8080/realms/scim/protocol/openid-connect/token \
   -d grant_type=password -d username=alice -d password=alice \
-  -d client_id=scim-client -d client_secret=scim-client-secret \
+  -d client_id=scim-client -d client_secret=w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7 \
   -d scope=scim
 ```
 
