@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiscoveryController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 let DiscoveryController = class DiscoveryController {
     serviceProviderConfig() {
         return {
@@ -66,24 +67,28 @@ let DiscoveryController = class DiscoveryController {
 };
 exports.DiscoveryController = DiscoveryController;
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'ServiceProviderConfig — advertised SCIM capabilities' }),
     (0, common_1.Get)('ServiceProviderConfig'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], DiscoveryController.prototype, "serviceProviderConfig", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'ResourceTypes — User and Group resource definitions' }),
     (0, common_1.Get)('ResourceTypes'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], DiscoveryController.prototype, "resourceTypes", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Schemas — User and Group attribute schemas' }),
     (0, common_1.Get)('Schemas'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], DiscoveryController.prototype, "schemas", null);
 exports.DiscoveryController = DiscoveryController = __decorate([
+    (0, swagger_1.ApiTags)('SCIM Discovery'),
     (0, common_1.Controller)('scim/v2')
 ], DiscoveryController);
 const USER_SCHEMA = {

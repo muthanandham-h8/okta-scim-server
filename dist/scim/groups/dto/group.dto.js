@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroupPatchOpDto = exports.UpdateScimGroupDto = exports.CreateScimGroupDto = exports.ScimGroupMemberDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const user_dto_1 = require("../../users/dto/user.dto");
@@ -17,10 +18,12 @@ class ScimGroupMemberDto {
 }
 exports.ScimGroupMemberDto = ScimGroupMemberDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'SCIM user id of the member', example: 'cce06042-d39e-43b5-869b-c00d26231d35' }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ScimGroupMemberDto.prototype, "value", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'jane.doe@example.com' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -29,20 +32,24 @@ class CreateScimGroupDto {
 }
 exports.CreateScimGroupDto = CreateScimGroupDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: ['urn:ietf:params:scim:schemas:core:2.0:Group'] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     __metadata("design:type", Array)
 ], CreateScimGroupDto.prototype, "schemas", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Engineering' }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateScimGroupDto.prototype, "displayName", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Okta-side stable identifier' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateScimGroupDto.prototype, "externalId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: [ScimGroupMemberDto] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
@@ -56,11 +63,13 @@ class GroupPatchOpDto {
 }
 exports.GroupPatchOpDto = GroupPatchOpDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     __metadata("design:type", Array)
 ], GroupPatchOpDto.prototype, "schemas", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ type: [user_dto_1.PatchOperationDto] }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => user_dto_1.PatchOperationDto),

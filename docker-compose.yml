@@ -12,5 +12,29 @@ services:
     volumes:
       - okta_scim_pgdata:/var/lib/postgresql/data
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: okta-scim-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      # Admin console login (http://localhost:8080). Not needed for the SCIM
+      # flow; the realm/client/user are imported below.
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      # Public URL Okta/browsers reach Keycloak at (through ngrok + reverse proxy).
+      # Makes token "iss" and login redirects use the public https URL.
+      KC_HOSTNAME: "https://excluding-snowdrift-reformer.ngrok-free.dev"
+      KC_PROXY_HEADERS: "xforwarded"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Realm auto-imported on first start (creates the "scim" realm).
+      - ./keycloak/realm-scim.json:/opt/keycloak/data/import/realm-scim.json:ro
+
 volumes:
   okta_scim_pgdata:

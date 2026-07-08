@@ -1,10 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 // These metadata endpoints are intentionally left unauthenticated, per common
 // SCIM server practice: Okta (and other clients) probe them while validating
 // a connection, sometimes before the OAuth token exchange completes.
+@ApiTags('SCIM Discovery')
 @Controller('scim/v2')
 export class DiscoveryController {
+  @ApiOperation({ summary: 'ServiceProviderConfig — advertised SCIM capabilities' })
   @Get('ServiceProviderConfig')
   serviceProviderConfig() {
     return {
@@ -27,6 +30,7 @@ export class DiscoveryController {
     };
   }
 
+  @ApiOperation({ summary: 'ResourceTypes — User and Group resource definitions' })
   @Get('ResourceTypes')
   resourceTypes() {
     return {
@@ -53,6 +57,7 @@ export class DiscoveryController {
     };
   }
 
+  @ApiOperation({ summary: 'Schemas — User and Group attribute schemas' })
   @Get('Schemas')
   schemas() {
     return {

@@ -3,3 +3,14 @@ node_modules
 .env
 
 /generated/prisma
+
+# TypeScript incremental build cache — stale copies cause "Cannot find module"
+# after `rimraf dist`, so it must never be committed.
+*.tsbuildinfo
+
+# ngrok config may contain an auth token
+ngrok.yml
+
+# demo runtime artifacts
+logs/
+.demo-pids.json

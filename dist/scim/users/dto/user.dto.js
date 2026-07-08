@@ -10,17 +10,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PatchOpDto = exports.PatchOperationDto = exports.UpdateScimUserDto = exports.CreateScimUserDto = exports.ScimEmailDto = exports.ScimNameDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class ScimNameDto {
 }
 exports.ScimNameDto = ScimNameDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Jane' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ScimNameDto.prototype, "givenName", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Doe' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -29,16 +32,19 @@ class ScimEmailDto {
 }
 exports.ScimEmailDto = ScimEmailDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'jane.doe@example.com' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ScimEmailDto.prototype, "value", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: true }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], ScimEmailDto.prototype, "primary", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'work' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -47,26 +53,31 @@ class CreateScimUserDto {
 }
 exports.CreateScimUserDto = CreateScimUserDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: ['urn:ietf:params:scim:schemas:core:2.0:User'] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     __metadata("design:type", Array)
 ], CreateScimUserDto.prototype, "schemas", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'jane.doe@example.com' }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateScimUserDto.prototype, "userName", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Okta-side stable identifier' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateScimUserDto.prototype, "externalId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: ScimNameDto }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateNested)(),
     (0, class_transformer_1.Type)(() => ScimNameDto),
     __metadata("design:type", ScimNameDto)
 ], CreateScimUserDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: [ScimEmailDto] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
@@ -74,11 +85,13 @@ __decorate([
     __metadata("design:type", Array)
 ], CreateScimUserDto.prototype, "emails", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: true, default: true }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateScimUserDto.prototype, "active", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Optional initial password' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -90,15 +103,21 @@ class PatchOperationDto {
 }
 exports.PatchOperationDto = PatchOperationDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'replace', enum: ['add', 'remove', 'replace'] }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PatchOperationDto.prototype, "op", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'active' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PatchOperationDto.prototype, "path", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Scalar, object, or array depending on op/path',
+        example: false,
+    }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], PatchOperationDto.prototype, "value", void 0);
@@ -106,11 +125,13 @@ class PatchOpDto {
 }
 exports.PatchOpDto = PatchOpDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     __metadata("design:type", Array)
 ], PatchOpDto.prototype, "schemas", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ type: [PatchOperationDto] }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => PatchOperationDto),

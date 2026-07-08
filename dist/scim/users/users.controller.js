@@ -15,7 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
-const bearer_token_guard_1 = require("../../oauth/bearer-token.guard");
+const swagger_1 = require("@nestjs/swagger");
+const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
 const scim_exception_filter_1 = require("../common/scim-exception.filter");
 const scim_constants_1 = require("../common/scim.constants");
 const scim_filter_util_1 = require("../common/scim-filter.util");
@@ -66,6 +67,10 @@ let UsersController = class UsersController {
 };
 exports.UsersController = UsersController;
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'List users (supports `userName eq "..."` filter + pagination)' }),
+    (0, swagger_1.ApiQuery)({ name: 'filter', required: false, example: 'userName eq "jdoe@example.com"' }),
+    (0, swagger_1.ApiQuery)({ name: 'startIndex', required: false, example: '1' }),
+    (0, swagger_1.ApiQuery)({ name: 'count', required: false, example: '100' }),
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('filter')),
     __param(1, (0, common_1.Query)('startIndex')),
@@ -75,6 +80,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "list", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Get a single user by id' }),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -82,6 +88,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findOne", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Create a user (Okta provisioning)' }),
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(201),
     __param(0, (0, common_1.Body)()),
@@ -90,6 +97,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "create", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Replace a user (full PUT)' }),
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -98,6 +106,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "replace", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({
+        summary: 'Patch a user (Okta deactivates via replace active:false)',
+    }),
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -106,6 +117,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "patch", null);
 __decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Hard-delete a user' }),
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(204),
     __param(0, (0, common_1.Param)('id')),
@@ -114,7 +126,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "remove", null);
 exports.UsersController = UsersController = __decorate([
-    (0, common_1.UseGuards)(bearer_token_guard_1.BearerTokenGuard),
+    (0, swagger_1.ApiTags)('SCIM Users'),
+    (0, swagger_1.ApiBearerAuth)('keycloak-jwt'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.UseFilters)(scim_exception_filter_1.ScimExceptionFilter),
     (0, common_1.Controller)('scim/v2/Users'),
     __metadata("design:paramtypes", [users_service_1.UsersService,
