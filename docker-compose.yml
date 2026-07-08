@@ -28,7 +28,8 @@ services:
       KC_HOSTNAME_STRICT: "false"
       # Public URL Okta/browsers reach Keycloak at (through ngrok + reverse proxy).
       # Makes token "iss" and login redirects use the public https URL.
-      KC_HOSTNAME: "https://excluding-snowdrift-reformer.ngrok-free.dev"
+      # Single source: PUBLIC_BASE_URL from .env (injected by scripts/start.mjs).
+      KC_HOSTNAME: "${PUBLIC_BASE_URL:-http://localhost:8080}"
       KC_PROXY_HEADERS: "xforwarded"
     ports:
       - "8080:8080"

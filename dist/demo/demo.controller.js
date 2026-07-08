@@ -28,7 +28,8 @@ let DemoController = class DemoController {
     }
     demoConfig() {
         const base = this.config.get('PUBLIC_BASE_URL', 'http://localhost:3000');
-        const issuer = this.config.get('KEYCLOAK_ISSUER', 'http://localhost:8080/realms/scim');
+        const realm = this.config.get('KEYCLOAK_REALM', 'scim');
+        const issuer = this.config.get('KEYCLOAK_ISSUER') || `${base}/realms/${realm}`;
         const kcBase = issuer.replace(/\/realms\/[^/]+$/, '');
         return {
             scimBase: `${base}/scim/v2`,
