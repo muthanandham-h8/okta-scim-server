@@ -5,9 +5,13 @@ const core_1 = require("@nestjs/core");
 const swagger_1 = require("@nestjs/swagger");
 const express = require("express");
 const app_module_1 = require("./app.module");
+const logging_interceptor_1 = require("./common/logging.interceptor");
 async function bootstrap() {
     var _a;
-    const app = await core_1.NestFactory.create(app_module_1.AppModule, { bodyParser: false });
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, {
+        bodyParser: false,
+        logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
     app.use(express.json({ type: ['application/json', 'application/scim+json'] }));
     app.use(express.urlencoded({ extended: true }));
     app.useGlobalPipes(new common_1.ValidationPipe({
@@ -19,6 +23,7 @@ async function bootstrap() {
         res.type('application/scim+json');
         next();
     });
+    app.useGlobalInterceptors(new logging_interceptor_1.RequestLoggingInterceptor());
     const issuer = (_a = process.env.KEYCLOAK_ISSUER) !== null && _a !== void 0 ? _a : 'http://localhost:8080/realms/scim';
     const swaggerConfig = new swagger_1.DocumentBuilder()
         .setTitle('SCIM 2.0 Server (Keycloak-secured)')

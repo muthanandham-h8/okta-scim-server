@@ -26,27 +26,38 @@ let JwtAuthGuard = JwtAuthGuard_1 = class JwtAuthGuard {
         this.jwks = (0, jose_1.createRemoteJWKSet)(new URL(jwksUri));
     }
     async canActivate(context) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f, _g;
         const req = context.switchToHttp().getRequest();
         const header = req.headers.authorization;
         if (!header || !header.startsWith('Bearer ')) {
+            this.logger.warn(`Auth REJECTED: no Bearer token on ${req.method} ${req.originalUrl}`);
             throw new common_1.UnauthorizedException('Bearer token required');
         }
         const token = header.slice('Bearer '.length).trim();
+        this.logger.debug(`Bearer token received (len=${token.length}): ${token.slice(0, 16)}…${token.slice(-8)}`);
         let payload;
         try {
-            ({ payload } = await (0, jose_1.jwtVerify)(token, this.jwks, Object.assign({ issuer: this.issuer }, (this.audience ? { audience: this.audience } : {}))));
+            const { payload: p, protectedHeader } = await (0, jose_1.jwtVerify)(token, this.jwks, Object.assign({ issuer: this.issuer }, (this.audience ? { audience: this.audience } : {})));
+            payload = p;
+            const iso = (n) => (typeof n === 'number' ? new Date(n * 1000).toISOString() : '—');
+            this.logger.log(`JWT verified | alg=${protectedHeader.alg} kid=${protectedHeader.kid} ` +
+                `iss=${payload.iss} sub=${payload.sub} ` +
+                `client=${(_b = (_a = payload.azp) !== null && _a !== void 0 ? _a : payload.client_id) !== null && _b !== void 0 ? _b : '—'} ` +
+                `aud=${(_c = JSON.stringify(payload.aud)) !== null && _c !== void 0 ? _c : '—'} scope="${(_d = payload.scope) !== null && _d !== void 0 ? _d : ''}" ` +
+                `iat=${iso(payload.iat)} exp=${iso(payload.exp)}`);
         }
         catch (err) {
-            this.logger.warn(`JWT verification failed: ${err.message}`);
+            this.logger.warn(`JWT verification FAILED: ${err.message}`);
             throw new common_1.UnauthorizedException('invalid or expired access token');
         }
         if (!this.hasRequiredScope(payload)) {
+            this.logger.warn(`Authz DENIED: token scope "${(_e = payload.scope) !== null && _e !== void 0 ? _e : ''}" is missing required "${this.requiredScope}"`);
             throw new common_1.UnauthorizedException(`token missing required scope "${this.requiredScope}"`);
         }
+        this.logger.debug(`Authz OK: required scope "${this.requiredScope}" present`);
         req.auth = payload;
         req.oauthClientId =
-            (_b = (_a = payload.azp) !== null && _a !== void 0 ? _a : payload.client_id) !== null && _b !== void 0 ? _b : payload.sub;
+            (_g = (_f = payload.azp) !== null && _f !== void 0 ? _f : payload.client_id) !== null && _g !== void 0 ? _g : payload.sub;
         return true;
     }
     hasRequiredScope(payload) {

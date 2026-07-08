@@ -43,24 +43,43 @@ export class JwtAuthGuard implements CanActivate {
     const header = req.headers.authorization;
 
     if (!header || !header.startsWith('Bearer ')) {
+      this.logger.warn(
+        `Auth REJECTED: no Bearer token on ${req.method} ${req.originalUrl}`,
+      );
       throw new UnauthorizedException('Bearer token required');
     }
     const token = header.slice('Bearer '.length).trim();
+    this.logger.debug(
+      `Bearer token received (len=${token.length}): ${token.slice(0, 16)}…${token.slice(-8)}`,
+    );
 
     let payload: JWTPayload;
     try {
-      ({ payload } = await jwtVerify(token, this.jwks, {
+      const { payload: p, protectedHeader } = await jwtVerify(token, this.jwks, {
         issuer: this.issuer,
         ...(this.audience ? { audience: this.audience } : {}),
-      }));
+      });
+      payload = p;
+      const iso = (n?: number) => (typeof n === 'number' ? new Date(n * 1000).toISOString() : '—');
+      this.logger.log(
+        `JWT verified | alg=${protectedHeader.alg} kid=${protectedHeader.kid} ` +
+          `iss=${payload.iss} sub=${payload.sub} ` +
+          `client=${(payload.azp as string) ?? (payload.client_id as string) ?? '—'} ` +
+          `aud=${JSON.stringify(payload.aud) ?? '—'} scope="${(payload.scope as string) ?? ''}" ` +
+          `iat=${iso(payload.iat)} exp=${iso(payload.exp)}`,
+      );
     } catch (err) {
-      this.logger.warn(`JWT verification failed: ${(err as Error).message}`);
+      this.logger.warn(`JWT verification FAILED: ${(err as Error).message}`);
       throw new UnauthorizedException('invalid or expired access token');
     }
 
     if (!this.hasRequiredScope(payload)) {
+      this.logger.warn(
+        `Authz DENIED: token scope "${(payload.scope as string) ?? ''}" is missing required "${this.requiredScope}"`,
+      );
       throw new UnauthorizedException(`token missing required scope "${this.requiredScope}"`);
     }
+    this.logger.debug(`Authz OK: required scope "${this.requiredScope}" present`);
 
     // Expose useful claims to downstream handlers, mirroring the old guard's
     // req.oauthClientId contract.

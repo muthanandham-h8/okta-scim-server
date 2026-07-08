@@ -21,7 +21,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "scim-client-secret",
+      "secret": "w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
