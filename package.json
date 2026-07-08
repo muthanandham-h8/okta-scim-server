@@ -23,7 +23,9 @@
     "prisma:studio": "prisma studio",
     "setup": "node scripts/start.mjs",
     "demo:start": "node scripts/start.mjs",
-    "demo:stop": "node scripts/stop.mjs"
+    "demo:stop": "node scripts/stop.mjs",
+    "start:sh": "bash scripts/start.sh",
+    "stop:sh": "bash scripts/stop.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

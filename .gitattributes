@@ -1,0 +1,4 @@
+# Shell scripts must use LF endings, or bash fails on macOS/Linux with
+# "\r: command not found" / "bad interpreter". Force LF regardless of platform.
+*.sh text eol=lf
+scripts/*.mjs text eol=lf
