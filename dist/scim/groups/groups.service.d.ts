@@ -10,16 +10,16 @@ export declare class GroupsService {
         groups: ({
             members: ({
                 user: {
-                    id: string;
-                    createdAt: Date;
                     givenName: string | null;
                     familyName: string | null;
                     userName: string;
                     externalId: string | null;
                     active: boolean;
+                    id: string;
                     email: string | null;
                     passwordHash: string | null;
                     raw: import("@prisma/client/runtime/library").JsonValue | null;
+                    createdAt: Date;
                     updatedAt: Date;
                 };
             } & {
@@ -28,9 +28,9 @@ export declare class GroupsService {
                 groupId: string;
             })[];
         } & {
+            externalId: string | null;
             id: string;
             createdAt: Date;
-            externalId: string | null;
             updatedAt: Date;
             displayName: string;
         })[];
@@ -38,16 +38,16 @@ export declare class GroupsService {
     findById(id: string): Promise<{
         members: ({
             user: {
-                id: string;
-                createdAt: Date;
                 givenName: string | null;
                 familyName: string | null;
                 userName: string;
                 externalId: string | null;
                 active: boolean;
+                id: string;
                 email: string | null;
                 passwordHash: string | null;
                 raw: import("@prisma/client/runtime/library").JsonValue | null;
+                createdAt: Date;
                 updatedAt: Date;
             };
         } & {
@@ -56,25 +56,25 @@ export declare class GroupsService {
             groupId: string;
         })[];
     } & {
+        externalId: string | null;
         id: string;
         createdAt: Date;
-        externalId: string | null;
         updatedAt: Date;
         displayName: string;
     }>;
     create(dto: CreateScimGroupDto): Promise<{
         members: ({
             user: {
-                id: string;
-                createdAt: Date;
                 givenName: string | null;
                 familyName: string | null;
                 userName: string;
                 externalId: string | null;
                 active: boolean;
+                id: string;
                 email: string | null;
                 passwordHash: string | null;
                 raw: import("@prisma/client/runtime/library").JsonValue | null;
+                createdAt: Date;
                 updatedAt: Date;
             };
         } & {
@@ -83,25 +83,25 @@ export declare class GroupsService {
             groupId: string;
         })[];
     } & {
+        externalId: string | null;
         id: string;
         createdAt: Date;
-        externalId: string | null;
         updatedAt: Date;
         displayName: string;
     }>;
     replace(id: string, dto: UpdateScimGroupDto): Promise<{
         members: ({
             user: {
-                id: string;
-                createdAt: Date;
                 givenName: string | null;
                 familyName: string | null;
                 userName: string;
                 externalId: string | null;
                 active: boolean;
+                id: string;
                 email: string | null;
                 passwordHash: string | null;
                 raw: import("@prisma/client/runtime/library").JsonValue | null;
+                createdAt: Date;
                 updatedAt: Date;
             };
         } & {
@@ -110,25 +110,25 @@ export declare class GroupsService {
             groupId: string;
         })[];
     } & {
+        externalId: string | null;
         id: string;
         createdAt: Date;
-        externalId: string | null;
         updatedAt: Date;
         displayName: string;
     }>;
     patch(id: string, patch: GroupPatchResult): Promise<{
         members: ({
             user: {
-                id: string;
-                createdAt: Date;
                 givenName: string | null;
                 familyName: string | null;
                 userName: string;
                 externalId: string | null;
                 active: boolean;
+                id: string;
                 email: string | null;
                 passwordHash: string | null;
                 raw: import("@prisma/client/runtime/library").JsonValue | null;
+                createdAt: Date;
                 updatedAt: Date;
             };
         } & {
@@ -137,9 +137,9 @@ export declare class GroupsService {
             groupId: string;
         })[];
     } & {
+        externalId: string | null;
         id: string;
         createdAt: Date;
-        externalId: string | null;
         updatedAt: Date;
         displayName: string;
     }>;

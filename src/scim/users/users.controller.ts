@@ -13,7 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BearerTokenGuard } from '../../oauth/bearer-token.guard';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { ScimExceptionFilter } from '../common/scim-exception.filter';
 import { SCIM_LIST_RESPONSE_SCHEMA } from '../common/scim.constants';
 import { parseEqFilter, parsePagination } from '../common/scim-filter.util';
@@ -22,7 +23,9 @@ import { UsersService } from './users.service';
 import { toScimUser } from './users.mapper';
 import { applyUserPatch } from './apply-user-patch';
 
-@UseGuards(BearerTokenGuard)
+@ApiTags('SCIM Users')
+@ApiBearerAuth('keycloak-jwt')
+@UseGuards(JwtAuthGuard)
 @UseFilters(ScimExceptionFilter)
 @Controller('scim/v2/Users')
 export class UsersController {
@@ -35,6 +38,10 @@ export class UsersController {
     return this.config.get<string>('PUBLIC_BASE_URL', 'http://localhost:3000');
   }
 
+  @ApiOperation({ summary: 'List users (supports `userName eq "..."` filter + pagination)' })
+  @ApiQuery({ name: 'filter', required: false, example: 'userName eq "jdoe@example.com"' })
+  @ApiQuery({ name: 'startIndex', required: false, example: '1' })
+  @ApiQuery({ name: 'count', required: false, example: '100' })
   @Get()
   async list(
     @Query('filter') filter?: string,
@@ -53,12 +60,14 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Get a single user by id' })
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const user = await this.users.findById(id);
     return toScimUser(user, this.baseUrl);
   }
 
+  @ApiOperation({ summary: 'Create a user (Okta provisioning)' })
   @Post()
   @HttpCode(201)
   async create(@Body() dto: CreateScimUserDto) {
@@ -66,12 +75,16 @@ export class UsersController {
     return toScimUser(user, this.baseUrl);
   }
 
+  @ApiOperation({ summary: 'Replace a user (full PUT)' })
   @Put(':id')
   async replace(@Param('id') id: string, @Body() dto: UpdateScimUserDto) {
     const user = await this.users.replace(id, dto);
     return toScimUser(user, this.baseUrl);
   }
 
+  @ApiOperation({
+    summary: 'Patch a user (Okta deactivates via replace active:false)',
+  })
   @Patch(':id')
   async patch(@Param('id') id: string, @Body() dto: PatchOpDto) {
     const fields = applyUserPatch(dto.Operations ?? []);
@@ -79,6 +92,7 @@ export class UsersController {
     return toScimUser(user, this.baseUrl);
   }
 
+  @ApiOperation({ summary: 'Hard-delete a user' })
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string) {
