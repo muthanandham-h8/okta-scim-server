@@ -21,6 +21,10 @@ server) and only **validated** here — this service issues nothing.
 - `src/scim` — SCIM 2.0 resource server: `/scim/v2/Users`, `/scim/v2/Groups`,
   and discovery endpoints (`ServiceProviderConfig`, `ResourceTypes`,
   `Schemas`), protected by `JwtAuthGuard`.
+- `src/demo` — presentation pages (`/home` dashboard, `/docs` runbooks).
+- `tools/edge-proxy.js` — a small reverse proxy that serves this app and
+  Keycloak under one public domain (for ngrok's single-URL free tier) and taps
+  the traffic for the `/home` activity log.
 - `prisma/schema.prisma` — Postgres models for SCIM users/groups only.
 
 ```
@@ -28,60 +32,80 @@ Okta (client) ──get token──▶ Keycloak (issuer) ──JWT──▶ Okta
 Okta ──Bearer JWT──▶ /scim/v2/*  ──verify signature via JWKS──▶ Keycloak
 ```
 
-## Setup
+## Quick start (one command)
 
-1. Start Postgres **and** Keycloak:
-   ```bash
-   docker compose up -d
-   ```
-   Keycloak comes up on http://localhost:8080 (admin `admin`/`admin`) and
-   auto-imports the `scim` realm with a client and a test user.
-2. Install dependencies and run migrations:
-   ```bash
-   npm install
-   npm run prisma:migrate   # or: npx prisma migrate deploy
-   ```
-3. Review `.env` — the Keycloak issuer/JWKS URLs and required scope.
-4. Run the server:
-   ```bash
-   npm run build && npm run start:prod
-   # or for local development:
-   npm run start:dev
-   ```
+Brings up Postgres + Keycloak (Docker), runs Prisma, builds, and starts the app,
+edge-proxy, and an ngrok tunnel on the single public domain from `.env`:
 
-### What the imported realm contains
+```bash
+npm run demo:start      # start everything   (alias: npm run setup)
+npm run demo:stop       # stop everything
+```
+
+Prerequisites: **Docker** running, and **ngrok** installed + authenticated
+(or run `SKIP_NGROK=1 npm run demo:start` for local-only). See the script header
+in `scripts/start.mjs`.
+
+<details>
+<summary>Manual setup (without the helper script)</summary>
+
+```bash
+docker compose up -d                 # Postgres + Keycloak (auto-imports the realm)
+npm install
+npm run prisma:migrate               # or: npx prisma migrate deploy
+npm run build && npm run start:prod  # or: npm run start:dev  (watch mode)
+```
+</details>
+
+## UI pages
+
+| Path | What |
+|---|---|
+| **`/home`** | Live dashboard — provisioned users + a clear Okta ⇄ Keycloak ⇄ SCIM activity log (request/response, headers, payloads). `/` and `/demo` redirect here. |
+| **`/docs`** | Documentation — "How it works" + runbooks per method: `/docs/saml`, `/docs/swa`, `/docs/oin`, `/docs/private`. |
+| **`/swagger`** | Interactive API docs (Swagger). Auth via **keycloak-jwt** (paste a JWT) or **keycloak-oauth2** (runs Keycloak's auth-code flow). |
+
+## What the imported realm contains
 
 | Thing | Value |
 |---|---|
 | Realm | `scim` |
-| Client ID | `scim-client` |
-| Client secret | `w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7` |
+| Client — demo/testing | `scim-client` / `w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7` |
+| Client — dedicated for Okta | `okta-provisioning` / `7Qhq86B8mibREt7hoTcjBzSEO2NvMJlb` |
 | Test user | `alice` / `alice` |
 | Scope | `scim` (default client scope, appears in the token) |
+| Access token lifespan | `60s` (set low so token re-fetches are visible in the demo log; raise `accessTokenLifespan` in the realm for real use) |
 | Issuer | `http://localhost:8080/realms/scim` |
 
-## Configuring Okta (production)
+`okta-provisioning` is a separate confidential client (client-credentials
+enabled) so Okta's access can be rotated/revoked independently of the demo
+`scim-client`.
 
-In Okta's SCIM setup, point the OAuth endpoints at **Keycloak** (not this
-service), and the SCIM base URL at this service:
+## Connecting Okta (private integration — recommended)
 
-| Okta field | Value |
+Create a **custom SAML app** in your Okta org purely as a shell, enable SCIM
+provisioning, and authenticate with **OAuth 2.0 Client Credentials** against
+Keycloak. Full step-by-step: open **`/docs/saml`**. Key values:
+
+| Okta provisioning field | Value |
 |---|---|
-| Authorization endpoint | `https://<keycloak>/realms/scim/protocol/openid-connect/auth` |
+| SCIM connector base URL | `https://<this-service>/scim/v2` |
+| Auth mode | OAuth 2.0 — Client Credentials |
 | Token endpoint | `https://<keycloak>/realms/scim/protocol/openid-connect/token` |
-| Client ID / Secret | a client you register in Keycloak for Okta |
-| Scopes | `scim` |
-| SCIM base URL | `https://<this-service>/scim/v2` |
+| Client ID / Secret | `okta-provisioning` / (its secret) |
+| Scope | `scim` |
+
+> SCIM provisioning on a custom app is only offered on **SAML** or **SWA** app
+> types (not OIDC). For public catalog distribution with the Authorization-Code +
+> refresh-token flow, see the **OIN** runbook at `/docs/oin`.
 
 ## Getting a token (no Okta needed)
-
-Any standard OAuth2 grant against Keycloak works. Two easy ones for testing:
 
 ```bash
 # Client credentials (machine-to-machine)
 curl -s -X POST http://localhost:8080/realms/scim/protocol/openid-connect/token \
   -d grant_type=client_credentials \
-  -d client_id=scim-client -d client_secret=w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7 \
+  -d client_id=okta-provisioning -d client_secret=7Qhq86B8mibREt7hoTcjBzSEO2NvMJlb \
   -d scope=scim
 
 # Resource-owner password (as the test user)
@@ -91,19 +115,33 @@ curl -s -X POST http://localhost:8080/realms/scim/protocol/openid-connect/token 
   -d scope=scim
 ```
 
-Both return an `access_token` (a JWT). Use it as a Bearer token:
+Use the returned `access_token` as a Bearer token:
 
 ```bash
 curl -H "Authorization: Bearer <access_token>" http://localhost:3000/scim/v2/Users
 ```
 
-## API docs (Swagger)
+## Deployment (always-on)
 
-Interactive docs at http://localhost:3000/docs. Two ways to authenticate:
+The whole stack is containerized so it runs on a free always-on VM (e.g. Oracle
+Cloud Always-Free) with one command and survives reboots (`restart: unless-stopped`).
 
-- **keycloak-jwt** — paste a JWT from the commands above.
-- **keycloak-oauth2** — let Swagger run Keycloak's Authorization Code flow
-  (uses `scim-client`; the realm registers Swagger's redirect URI).
+| File | Purpose |
+|---|---|
+| `Dockerfile` + `docker-entrypoint.sh` | App image (multi-arch; runs `prisma migrate deploy` on boot) |
+| `docker-compose.prod.yml` | Full stack behind **ngrok** |
+| `docker-compose.caddy.yml` | Full stack behind **Caddy** (auto Let's Encrypt TLS) + a **DuckDNS** updater |
+| `deploy/README-oracle.md` | Step-by-step Oracle Always-Free VM runbook (both paths) |
+| `deploy/.env.deploy.example` | VM-side env template |
+
+```bash
+# on the VM (see deploy/README-oracle.md)
+docker compose -f docker-compose.prod.yml up -d --build     # ngrok path
+docker compose -f docker-compose.caddy.yml up -d --build    # Caddy + DuckDNS path
+```
+
+For a local Caddy/DuckDNS run: `npm run demo:start:caddy` (needs a `.env.caddy`,
+a domain pointing at your machine, and ports 80/443 reachable).
 
 ## SCIM behavior notes
 
@@ -126,3 +164,7 @@ npm run prisma:studio  # inspect the database
 npm run test           # unit tests
 npm run test:e2e       # e2e tests
 ```
+
+> Demo conveniences (low token lifespan, full tokens shown in the `/home` log,
+> secrets printed on `/docs` pages) are intentional for this demo — revert them
+> before any real deployment.
