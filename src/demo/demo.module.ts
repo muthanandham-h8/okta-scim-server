@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { DemoController } from './demo.controller';
+import { HomeController } from './home.controller';
+import { DocsController } from './docs.controller';
 import { EventsStore } from './events.store';
 
+// Presentation module: the live dashboard (/home) and the documentation
+// (/docs, /docs/:method). The SCIM API itself lives in ScimModule.
 @Module({
-  controllers: [DemoController],
+  controllers: [HomeController, DocsController],
   providers: [EventsStore],
 })
 export class DemoModule {}

@@ -1,14 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Redirect } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
-import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
+  // Root and the old /demo path both land on the dashboard at /home.
   @ApiExcludeEndpoint()
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
+  @Redirect('/home', 302)
+  root(): void {}
+
+  @ApiExcludeEndpoint()
+  @Get('demo')
+  @Redirect('/home', 302)
+  demo(): void {}
 }

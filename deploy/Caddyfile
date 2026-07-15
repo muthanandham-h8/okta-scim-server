@@ -1,0 +1,15 @@
+# Caddy reverse proxy — real domain + automatic Let's Encrypt TLS.
+#
+# Caddy terminates HTTPS for your domain and forwards everything to the
+# edge-proxy, which keeps doing the path routing (Keycloak vs SCIM app) and the
+# /demo live-event capture. Caddy automatically sets X-Forwarded-Proto=https,
+# so Keycloak (KC_PROXY_HEADERS=xforwarded) issues tokens with the public https
+# issuer.
+#
+# CADDY_DOMAIN is injected from the VM .env (see docker-compose.caddy.yml).
+# On first start Caddy obtains a certificate via the HTTP-01 challenge, so the
+# domain must resolve to this VM and ports 80 + 443 must be reachable.
+
+{$CADDY_DOMAIN} {
+	reverse_proxy edge-proxy:8088
+}

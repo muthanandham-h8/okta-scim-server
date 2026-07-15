@@ -77,7 +77,8 @@ async function bootstrap() {
     .addTag('SCIM Discovery', 'Unauthenticated metadata endpoints')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document, {
+  // Swagger moved to /swagger — /docs now serves the human documentation pages.
+  SwaggerModule.setup('swagger', app, document, {
     swaggerOptions: { persistAuthorization: true },
   });
 

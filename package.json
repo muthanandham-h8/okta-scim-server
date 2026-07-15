@@ -24,6 +24,9 @@
     "setup": "node scripts/start.mjs",
     "demo:start": "node scripts/start.mjs",
     "demo:stop": "node scripts/stop.mjs",
+    "demo:start:caddy": "docker compose --env-file .env.caddy -f docker-compose.caddy.yml up -d --build",
+    "demo:stop:caddy": "docker compose --env-file .env.caddy -f docker-compose.caddy.yml down",
+    "demo:logs:caddy": "docker compose --env-file .env.caddy -f docker-compose.caddy.yml logs -f",
     "start:sh": "bash scripts/start.sh",
     "stop:sh": "bash scripts/stop.sh"
   },

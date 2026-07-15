@@ -1,13 +1,10 @@
-import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { DemoEvent, EventsStore } from './events.store';
-export declare class DemoController {
+export declare class HomeController {
     private readonly prisma;
     private readonly events;
-    private readonly config;
-    constructor(prisma: PrismaService, events: EventsStore, config: ConfigService);
-    private demoConfig;
+    constructor(prisma: PrismaService, events: EventsStore);
     page(): string;
     users(): Promise<{
         updatedAt: string;

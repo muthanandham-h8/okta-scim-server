@@ -1,6 +1,8 @@
 node_modules
 # Keep environment variables out of version control
 .env
+# Caddy/DuckDNS env for local `demo:start:caddy` — holds the DuckDNS token
+.env.caddy
 
 /generated/prisma
 

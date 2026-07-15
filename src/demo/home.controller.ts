@@ -10,54 +10,31 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
-import { DemoConfig, renderDemoPage } from './demo.page';
+import { renderHomePage } from './home.page';
 import { DemoEvent, EventsStore } from './events.store';
 
-// Captured once at process start; lets the browser confirm which build it loaded.
 const BUILD_ID = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 
 /**
- * Presentation-only dashboard for demos. Serves an HTML page (/demo) that polls
- * two JSON feeds reading straight from the database and an in-memory event
- * buffer, so the browser needs no Bearer token. NOT part of the SCIM surface
- * and intentionally unauthenticated — do not expose in a real deployment.
+ * Live dashboard at /home: provisioned users + the actor-by-actor traffic log
+ * captured by the edge-proxy. Presentation-only and unauthenticated — polls two
+ * JSON feeds that read straight from the DB and the in-memory event buffer.
  */
 @ApiExcludeController()
-@Controller('demo')
-export class DemoController {
+@Controller('home')
+export class HomeController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsStore,
-    private readonly config: ConfigService,
   ) {}
-
-  private demoConfig(): DemoConfig {
-    const base = this.config.get<string>('PUBLIC_BASE_URL', 'http://localhost:3000');
-    const realm = this.config.get<string>('KEYCLOAK_REALM', 'scim');
-    const issuer = this.config.get<string>('KEYCLOAK_ISSUER') || `${base}/realms/${realm}`;
-    // Keycloak base (strip the trailing /realms/<realm>) for the admin console link.
-    const kcBase = issuer.replace(/\/realms\/[^/]+$/, '');
-    return {
-      scimBase: `${base}/scim/v2`,
-      authEndpoint: `${issuer}/protocol/openid-connect/auth`,
-      tokenEndpoint: `${issuer}/protocol/openid-connect/token`,
-      clientId: this.config.get<string>('DEMO_CLIENT_ID', 'scim-client'),
-      clientSecret: this.config.get<string>('DEMO_CLIENT_SECRET', 'scim-client-secret'),
-      scope: this.config.get<string>('KEYCLOAK_REQUIRED_SCOPE', 'scim'),
-      configGuideUrl: `${base}/demo`,
-      keycloakAdmin: `${kcBase}/admin/master/console/`,
-      buildId: BUILD_ID,
-    };
-  }
 
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
   @Header('Cache-Control', 'no-store')
   page(): string {
-    return renderDemoPage(this.demoConfig());
+    return renderHomePage({ buildId: BUILD_ID });
   }
 
   @Get('api/users')
@@ -94,7 +71,6 @@ export class DemoController {
   @Delete('api/data')
   @HttpCode(204)
   async clearData() {
-    // Delete memberships first, then users/groups (FKs also cascade on delete).
     await this.prisma.scimGroupMember.deleteMany();
     await this.prisma.scimUser.deleteMany();
     await this.prisma.scimGroup.deleteMany();

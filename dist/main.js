@@ -53,7 +53,7 @@ async function bootstrap() {
         .addTag('SCIM Discovery', 'Unauthenticated metadata endpoints')
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, swaggerConfig);
-    swagger_1.SwaggerModule.setup('docs', app, document, {
+    swagger_1.SwaggerModule.setup('swagger', app, document, {
         swaggerOptions: { persistAuthorization: true },
     });
     const port = process.env.PORT ? Number(process.env.PORT) : 3000;

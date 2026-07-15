@@ -1,0 +1,118 @@
+# Self-contained production stack for an always-on VM (e.g. Oracle Cloud
+# Always Free Ampere A1). Unlike the local docker-compose.yml (which only runs
+# Postgres + Keycloak and expects the app/edge-proxy/ngrok to run as host node
+# processes via scripts/start.mjs), this file containerizes EVERYTHING so the
+# whole stack is one `docker compose up -d` and survives reboots on its own:
+#   docker starts on boot  +  restart: unless-stopped  ->  stack comes back up.
+#
+# Usage on the VM:
+#   1. Create a .env next to this file with (see deploy/.env.deploy.example):
+#        PUBLIC_BASE_URL=https://<your-domain>.ngrok-free.dev
+#        PUBLIC_HOST=<your-domain>.ngrok-free.dev
+#        NGROK_AUTHTOKEN=<token from the ngrok account owning that domain>
+#        DEMO_CLIENT_SECRET=w_ZeIPDTrGvDwE9sb0fWQPXV-AZqmU-7
+#   2. docker compose -f docker-compose.prod.yml up -d --build
+#
+# Internal wiring uses compose service names (postgres / keycloak / app), so no
+# host ports need to be published except what you want to reach directly.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: okta-scim-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scim
+      POSTGRES_PASSWORD: scim
+      POSTGRES_DB: okta_scim
+    volumes:
+      - okta_scim_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scim -d okta_scim"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: okta-scim-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      # Fixes token "iss" and login redirects to the public https URL, even
+      # though ngrok reaches Keycloak over plain http on the internal network.
+      KC_HOSTNAME: "${PUBLIC_BASE_URL}"
+      KC_PROXY_HEADERS: "xforwarded"
+    volumes:
+      - ./keycloak/realm-scim.json:/opt/keycloak/data/import/realm-scim.json:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: okta-scim-app:latest
+    container_name: okta-scim-app
+    restart: unless-stopped
+    # Runs `prisma migrate deploy` before starting (see docker-entrypoint.sh).
+    environment:
+      RUN_MIGRATIONS: "1"
+      PORT: "3000"
+      DATABASE_URL: "postgresql://scim:scim@postgres:5432/okta_scim?schema=public"
+      # Public URL is used for the token issuer the guard requires and for SCIM
+      # "location" links returned to Okta. Single source: .env on the VM.
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL}"
+      KEYCLOAK_REALM: "scim"
+      # JWKS is fetched over the internal network (same signing keys regardless
+      # of how Keycloak is reached from outside).
+      KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/scim/protocol/openid-connect/certs"
+      KEYCLOAK_AUDIENCE: ""
+      KEYCLOAK_REQUIRED_SCOPE: "scim"
+      DEMO_CLIENT_ID: "scim-client"
+      DEMO_CLIENT_SECRET: "${DEMO_CLIENT_SECRET}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  edge-proxy:
+    image: okta-scim-app:latest
+    container_name: okta-scim-edge-proxy
+    restart: unless-stopped
+    command: ["node", "tools/edge-proxy.js"]
+    environment:
+      EDGE_PORT: "8088"
+      PUBLIC_HOST: "${PUBLIC_HOST}"
+      KEYCLOAK_TARGET: "http://keycloak:8080"
+      SCIM_TARGET: "http://app:3000"
+      EVENT_SINK: "http://app:3000/home/internal/events"
+    depends_on:
+      app:
+        condition: service_started
+      keycloak:
+        condition: service_started
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: okta-scim-ngrok
+    restart: unless-stopped
+    # Tunnels the single public domain to the edge-proxy, which fans out to
+    # Keycloak and the SCIM app by path (matches the local start.mjs behavior).
+    command: ["http", "edge-proxy:8088", "--domain", "${PUBLIC_HOST}", "--log", "stdout"]
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    ports:
+      # ngrok's local inspector (http://<vm>:4040) — optional, handy for debugging.
+      - "4040:4040"
+    depends_on:
+      edge-proxy:
+        condition: service_started
+
+volumes:
+  okta_scim_pgdata:

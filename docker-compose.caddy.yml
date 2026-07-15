@@ -1,0 +1,124 @@
+# Fully containerized stack fronted by Caddy (automatic Let's Encrypt TLS) on a
+# REAL domain (owned, or a free DuckDNS name). Same app-side services as
+# docker-compose.prod.yml, but the public entrypoint is Caddy on 80/443 instead
+# of an ngrok tunnel, plus a DuckDNS updater.
+#
+# Works in two places:
+#   - Oracle VM  (always-on)  -> see deploy/README-oracle.md
+#   - Your laptop (while it's on) -> `npm run demo:start:caddy`
+#     (requires your router to forward inbound 80/443 to this machine, and a
+#      DuckDNS A record pointing at your public IP)
+#
+# The distinct project name (`name:` below) keeps this stack fully separate from
+# the ngrok-based `npm run demo:start` stack — its own containers and its own
+# database volume — so the two never collide even if both exist.
+#
+# Reads these from the env file (deploy/.env.deploy.example -> .env.caddy):
+#   PUBLIC_BASE_URL, PUBLIC_HOST, DUCKDNS_SUBDOMAIN, DUCKDNS_TOKEN, DEMO_CLIENT_SECRET
+#
+# Bring up with:
+#   docker compose --env-file .env.caddy -f docker-compose.caddy.yml up -d --build
+name: okta-scim-caddy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scim
+      POSTGRES_PASSWORD: scim
+      POSTGRES_DB: okta_scim
+    volumes:
+      - okta_scim_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scim -d okta_scim"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME: "${PUBLIC_BASE_URL}"
+      KC_PROXY_HEADERS: "xforwarded"
+    volumes:
+      - ./keycloak/realm-scim.json:/opt/keycloak/data/import/realm-scim.json:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: okta-scim-app:latest
+    restart: unless-stopped
+    environment:
+      RUN_MIGRATIONS: "1"
+      PORT: "3000"
+      DATABASE_URL: "postgresql://scim:scim@postgres:5432/okta_scim?schema=public"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL}"
+      KEYCLOAK_REALM: "scim"
+      KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/scim/protocol/openid-connect/certs"
+      KEYCLOAK_AUDIENCE: ""
+      KEYCLOAK_REQUIRED_SCOPE: "scim"
+      DEMO_CLIENT_ID: "scim-client"
+      DEMO_CLIENT_SECRET: "${DEMO_CLIENT_SECRET}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  edge-proxy:
+    image: okta-scim-app:latest
+    restart: unless-stopped
+    command: ["node", "tools/edge-proxy.js"]
+    environment:
+      EDGE_PORT: "8088"
+      PUBLIC_HOST: "${PUBLIC_HOST}"
+      KEYCLOAK_TARGET: "http://keycloak:8080"
+      SCIM_TARGET: "http://app:3000"
+      EVENT_SINK: "http://app:3000/demo/internal/events"
+    depends_on:
+      app:
+        condition: service_started
+      keycloak:
+        condition: service_started
+
+  # Keeps the DuckDNS A record for ${DUCKDNS_SUBDOMAIN}.duckdns.org pointed at
+  # this machine's current public IP (checks every few minutes), so the domain
+  # survives an IP change without manual DNS edits.
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    restart: unless-stopped
+    environment:
+      SUBDOMAINS: "${DUCKDNS_SUBDOMAIN}"
+      TOKEN: "${DUCKDNS_TOKEN}"
+      LOG_FILE: "false"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"     # required for the HTTP-01 ACME challenge + http->https redirect
+      - "443:443"
+    environment:
+      CADDY_DOMAIN: "${PUBLIC_HOST}"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # persists issued certificates across restarts
+      - caddy_config:/config
+    depends_on:
+      edge-proxy:
+        condition: service_started
+
+volumes:
+  okta_scim_pgdata:
+  caddy_data:
+  caddy_config:

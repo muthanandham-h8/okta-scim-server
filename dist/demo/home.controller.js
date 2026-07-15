@@ -12,39 +12,20 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DemoController = void 0;
+exports.HomeController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const config_1 = require("@nestjs/config");
 const prisma_service_1 = require("../prisma/prisma.service");
-const demo_page_1 = require("./demo.page");
+const home_page_1 = require("./home.page");
 const events_store_1 = require("./events.store");
 const BUILD_ID = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-let DemoController = class DemoController {
-    constructor(prisma, events, config) {
+let HomeController = class HomeController {
+    constructor(prisma, events) {
         this.prisma = prisma;
         this.events = events;
-        this.config = config;
-    }
-    demoConfig() {
-        const base = this.config.get('PUBLIC_BASE_URL', 'http://localhost:3000');
-        const realm = this.config.get('KEYCLOAK_REALM', 'scim');
-        const issuer = this.config.get('KEYCLOAK_ISSUER') || `${base}/realms/${realm}`;
-        const kcBase = issuer.replace(/\/realms\/[^/]+$/, '');
-        return {
-            scimBase: `${base}/scim/v2`,
-            authEndpoint: `${issuer}/protocol/openid-connect/auth`,
-            tokenEndpoint: `${issuer}/protocol/openid-connect/token`,
-            clientId: this.config.get('DEMO_CLIENT_ID', 'scim-client'),
-            clientSecret: this.config.get('DEMO_CLIENT_SECRET', 'scim-client-secret'),
-            scope: this.config.get('KEYCLOAK_REQUIRED_SCOPE', 'scim'),
-            configGuideUrl: `${base}/demo`,
-            keycloakAdmin: `${kcBase}/admin/master/console/`,
-            buildId: BUILD_ID,
-        };
     }
     page() {
-        return (0, demo_page_1.renderDemoPage)(this.demoConfig());
+        return (0, home_page_1.renderHomePage)({ buildId: BUILD_ID });
     }
     async users() {
         const [users, totalGroups] = await Promise.all([
@@ -103,7 +84,7 @@ let DemoController = class DemoController {
         });
     }
 };
-exports.DemoController = DemoController;
+exports.HomeController = HomeController;
 __decorate([
     (0, common_1.Get)(),
     (0, common_1.Header)('Content-Type', 'text/html; charset=utf-8'),
@@ -111,33 +92,33 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", String)
-], DemoController.prototype, "page", null);
+], HomeController.prototype, "page", null);
 __decorate([
     (0, common_1.Get)('api/users'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
-], DemoController.prototype, "users", null);
+], HomeController.prototype, "users", null);
 __decorate([
     (0, common_1.Delete)('api/data'),
     (0, common_1.HttpCode)(204),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
-], DemoController.prototype, "clearData", null);
+], HomeController.prototype, "clearData", null);
 __decorate([
     (0, common_1.Get)('api/events'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], DemoController.prototype, "listEvents", null);
+], HomeController.prototype, "listEvents", null);
 __decorate([
     (0, common_1.Delete)('api/events'),
     (0, common_1.HttpCode)(204),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], DemoController.prototype, "clearEvents", null);
+], HomeController.prototype, "clearEvents", null);
 __decorate([
     (0, common_1.Post)('internal/events'),
     (0, common_1.HttpCode)(204),
@@ -146,12 +127,11 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
-], DemoController.prototype, "ingest", null);
-exports.DemoController = DemoController = __decorate([
+], HomeController.prototype, "ingest", null);
+exports.HomeController = HomeController = __decorate([
     (0, swagger_1.ApiExcludeController)(),
-    (0, common_1.Controller)('demo'),
+    (0, common_1.Controller)('home'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        events_store_1.EventsStore,
-        config_1.ConfigService])
-], DemoController);
-//# sourceMappingURL=demo.controller.js.map
+        events_store_1.EventsStore])
+], HomeController);
+//# sourceMappingURL=home.controller.js.map

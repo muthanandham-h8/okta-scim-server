@@ -2,7 +2,7 @@
   "realm": "scim",
   "enabled": true,
   "sslRequired": "none",
-  "accessTokenLifespan": 3600,
+  "accessTokenLifespan": 60,
   "clientScopes": [
     {
       "name": "scim",
@@ -28,6 +28,28 @@
       "redirectUris": [
         "http://localhost:3000/*",
         "https://excluding-snowdrift-reformer.ngrok-free.dev/*",
+        "https://system-admin.okta.com/*",
+        "https://system-admin.oktapreview.com/*",
+        "https://system-admin.okta-emea.com/*"
+      ],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["scim", "roles", "profile", "email"],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    },
+    {
+      "clientId": "okta-provisioning",
+      "name": "Okta provisioning client (dedicated - for real Okta SCIM setup)",
+      "description": "Confidential client Okta authenticates as (Client Credentials) to provision users. Separate from scim-client so it can be rotated/revoked independently.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "7Qhq86B8mibREt7hoTcjBzSEO2NvMJlb",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
         "https://system-admin.okta.com/*",
         "https://system-admin.oktapreview.com/*",
         "https://system-admin.okta-emea.com/*"

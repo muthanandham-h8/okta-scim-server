@@ -19,8 +19,12 @@ const http = require('http');
 const httpProxy = require('http-proxy');
 const { URL, URLSearchParams } = require('url');
 
-const KEYCLOAK = 'http://localhost:8080';
-const SCIM = 'http://localhost:3000';
+// Upstreams default to localhost (host processes, e.g. `npm run demo:start`) but
+// can be overridden for a containerized deploy where each service is reached by
+// its compose network name (e.g. KEYCLOAK_TARGET=http://keycloak:8080,
+// SCIM_TARGET=http://app:3000).
+const KEYCLOAK = process.env.KEYCLOAK_TARGET || 'http://localhost:8080';
+const SCIM = process.env.SCIM_TARGET || 'http://localhost:3000';
 // Single source: start.mjs sets PUBLIC_HOST from .env's PUBLIC_BASE_URL. If run
 // standalone, fall back to deriving the host from PUBLIC_BASE_URL, else local.
 const PUBLIC_HOST =
@@ -29,7 +33,7 @@ const PUBLIC_HOST =
     ? process.env.PUBLIC_BASE_URL.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     : 'localhost:8088');
 const PORT = Number(process.env.EDGE_PORT || 8088);
-const EVENT_SINK = process.env.EVENT_SINK || 'http://localhost:3000/demo/internal/events';
+const EVENT_SINK = process.env.EVENT_SINK || 'http://localhost:3000/home/internal/events';
 
 // ---------------------------------------------------------------- event tap ---
 function emit(event) {
@@ -52,7 +56,9 @@ function shortToken(v) {
 }
 
 const SECRET_KEYS = new Set(['client_secret', 'password']);
-const TOKEN_KEYS = new Set(['access_token', 'refresh_token', 'id_token']);
+// Tokens are shown IN FULL in the demo log (empty set = no shortening). This is
+// a demo aid so the whole JWT is visible; do not do this in a real deployment.
+const TOKEN_KEYS = new Set();
 
 function redact(obj) {
   if (!obj || typeof obj !== 'object') return obj;
@@ -88,7 +94,8 @@ function pickHeaders(h) {
   const out = {};
   if (h['content-type']) out['content-type'] = h['content-type'];
   if (h['authorization']) {
-    out['authorization'] = `Bearer ${shortToken(String(h['authorization']).replace(/^Bearer\s+/i, ''))}`;
+    // Full Authorization header (whole Bearer JWT) shown for the demo.
+    out['authorization'] = String(h['authorization']);
   }
   return out;
 }
@@ -106,8 +113,11 @@ passthrough.on('error', (err, req, res) => {
 });
 
 const serviceFor = (url) => (url.startsWith('/scim') ? 'scim' : 'keycloak');
+// App-served paths (SCIM API + the two UI pages + Swagger + redirects). Anything
+// else (/, /realms, /resources, /admin, JWKS, assets) goes to Keycloak.
 const routeToScim = (url) =>
-  url.startsWith('/scim') || url.startsWith('/docs') || url.startsWith('/demo');
+  url.startsWith('/scim') || url.startsWith('/home') || url.startsWith('/docs') ||
+  url.startsWith('/swagger') || url.startsWith('/demo');
 const shouldCapture = (url) =>
   url.startsWith('/scim/v2') || url.includes('/protocol/openid-connect/token');
 
